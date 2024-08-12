@@ -748,18 +748,26 @@ class DetectMultiBackend(nn.Module):
             for _ in range(2 if self.jit else 1):  #
                 self.forward(im)  # warmup
 
-    @staticmethod
-    def _model_type(p="path/to/model.pt"):
-        """
-        Determines model type from file path or URL, supporting various export formats.
+    @ staticmethod
+    def export_formats():
+        x = [
+            ["PyTorch", "-", ".pt", True, True],
+            ["TorchScript", "torchscript", ".torchscript", True, True],
+            ["ONNX", "onnx", ".onnx", True, True],
+            ["OpenVINO", "openvino", "_openvino_model", True, False],
+            ["TensorRT", "engine", ".engine", False, True],
+            ["CoreML", "coreml", ".mlpackage", True, False],
+            ["TensorFlow SavedModel", "saved_model", "_saved_model", True, True],
+            ["TensorFlow GraphDef", "pb", ".pb", True, True],
+            ["TensorFlow Lite", "tflite", ".tflite", True, False],
+            ["TensorFlow Edge TPU", "edgetpu", "_edgetpu.tflite", False, False],
+            ["TensorFlow.js", "tfjs", "_web_model", False, False],
+            ["PaddlePaddle", "paddle", "_paddle_model", True, True],]
+        return pd.DataFrame(x, columns=["Format", "Argument", "Suffix", "CPU", "GPU"])
 
-        Example: path='path/to/model.onnx' -> type=onnx
-        """
-        # types = [pt, jit, onnx, xml, engine, coreml, saved_model, pb, tflite, edgetpu, tfjs, paddle]
-        from export import export_formats
+    def _model_type(self, p="path/to/model.pt"):
         from utils.downloads import is_url
-
-        sf = list(export_formats().Suffix)  # export suffixes
+        sf = list(self.export_formats().Suffix)  # export suffixes
         if not is_url(p, check=False):
             check_suffix(p, sf)  # checks
         url = urlparse(p)  # if url may be Triton inference server
